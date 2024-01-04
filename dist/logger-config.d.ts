@@ -1,5 +1,5 @@
-import { LogDateTimeZone } from "./log-date-time-zone";
-import { LogRecord } from "./log-record";
+import { LogDateTimeZone } from "./log-date-time-zone.js";
+import { LogRecord } from "./log-record.js";
 export interface LoggerConfig {
     logDateTimeZone?: LogDateTimeZone;
     useJsonFormat?: boolean;

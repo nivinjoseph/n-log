@@ -1,7 +1,7 @@
-import "@nivinjoseph/n-ext";
 import { Exception } from "@nivinjoseph/n-exception";
-import { BaseLogger } from "./base-logger";
-import { FileLoggerConfig } from "./file-logger-config";
+import "@nivinjoseph/n-ext";
+import { BaseLogger } from "./base-logger.js";
+import { FileLoggerConfig } from "./file-logger-config.js";
 export declare class FileLogger extends BaseLogger {
     private readonly _mutex;
     private readonly _logDirPath;

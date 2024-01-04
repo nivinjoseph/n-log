@@ -1,7 +1,7 @@
 import { Exception } from "@nivinjoseph/n-exception";
-import { Logger } from "./logger";
-import { LoggerConfig } from "./logger-config";
-import { LogRecord } from "./log-record";
+import { LogRecord } from "./log-record.js";
+import { Logger } from "./logger.js";
+import { LoggerConfig } from "./logger-config.js";
 export declare abstract class BaseLogger implements Logger {
     private readonly _UINT_MAX;
     private readonly _source;

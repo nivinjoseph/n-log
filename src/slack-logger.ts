@@ -1,7 +1,7 @@
 import { given } from "@nivinjoseph/n-defensive";
 import { Exception } from "@nivinjoseph/n-exception";
 import { Disposable, Duration } from "@nivinjoseph/n-util";
-import * as Slack from "@slack/bolt";
+import Slack from "@slack/bolt";
 import { StringIndexed } from "@slack/bolt/dist/types/helpers.js";
 import { BaseLogger } from "./base-logger.js";
 import { LogRecord } from "./log-record.js";

@@ -1,1 +1,1 @@
-{"version":3,"file":"log-prefix.js","sourceRoot":"","sources":["../src/log-prefix.ts"],"names":[],"mappings":";;;AAAA,IAAY,SAMX;AAND,WAAY,SAAS;IAEjB,iCAAoB,CAAA;IACpB,+BAAkB,CAAA;IAClB,qCAAwB,CAAA;IACxB,iCAAoB,CAAA;AACxB,CAAC,EANW,SAAS,GAAT,iBAAS,KAAT,iBAAS,QAMpB"}
+{"version":3,"file":"log-prefix.js","sourceRoot":"","sources":["../src/log-prefix.ts"],"names":[],"mappings":"AAAA,MAAM,CAAN,IAAY,SAMX;AAND,WAAY,SAAS;IAEjB,iCAAoB,CAAA;IACpB,+BAAkB,CAAA;IAClB,qCAAwB,CAAA;IACxB,iCAAoB,CAAA;AACxB,CAAC,EANW,SAAS,KAAT,SAAS,QAMpB"}

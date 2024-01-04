@@ -1,12 +1,14 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.BaseLogger = void 0;
-const n_exception_1 = require("@nivinjoseph/n-exception");
-const log_date_time_zone_1 = require("./log-date-time-zone");
-const moment = require("moment-timezone");
-const n_config_1 = require("@nivinjoseph/n-config");
-const api_1 = require("@opentelemetry/api");
-class BaseLogger {
+import { ConfigurationManager } from "@nivinjoseph/n-config";
+import { Exception } from "@nivinjoseph/n-exception";
+import { SpanStatusCode, context, isSpanContextValid, trace } from "@opentelemetry/api";
+import { LogDateTimeZone } from "./log-date-time-zone.js";
+import { DateTime } from "luxon";
+export class BaseLogger {
+    get source() { return this._source; }
+    get service() { return this._service; }
+    get env() { return this._env; }
+    get useJsonFormat() { return this._useJsonFormat; }
+    get logInjector() { return this._logInjector; }
     /**
      *
      * @param logDateTimeZone Default is LogDateTimeZone.utc
@@ -18,13 +20,13 @@ class BaseLogger {
         // eslint-disable-next-line @typescript-eslint/naming-convention
         this._UINT_MAX = 4294967296;
         this._source = "nodejs";
-        this._service = (_b = (_a = n_config_1.ConfigurationManager.getConfig("package_name")) !== null && _a !== void 0 ? _a : n_config_1.ConfigurationManager.getConfig("package.name")) !== null && _b !== void 0 ? _b : "n-log";
-        this._env = (_d = (_c = n_config_1.ConfigurationManager.getConfig("env")) === null || _c === void 0 ? void 0 : _c.toLowerCase()) !== null && _d !== void 0 ? _d : "dev";
+        this._service = (_b = (_a = ConfigurationManager.getConfig("package_name")) !== null && _a !== void 0 ? _a : ConfigurationManager.getConfig("package.name")) !== null && _b !== void 0 ? _b : "n-log";
+        this._env = (_d = (_c = ConfigurationManager.getConfig("env")) === null || _c === void 0 ? void 0 : _c.toLowerCase()) !== null && _d !== void 0 ? _d : "dev";
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const { logDateTimeZone, useJsonFormat, logInjector, enableOtelToDatadogTraceConversion } = config !== null && config !== void 0 ? config : {};
         if (!logDateTimeZone || logDateTimeZone.isEmptyOrWhiteSpace() ||
-            ![log_date_time_zone_1.LogDateTimeZone.utc, log_date_time_zone_1.LogDateTimeZone.local, log_date_time_zone_1.LogDateTimeZone.est, log_date_time_zone_1.LogDateTimeZone.pst].contains(logDateTimeZone)) {
-            this._logDateTimeZone = log_date_time_zone_1.LogDateTimeZone.utc;
+            ![LogDateTimeZone.utc, LogDateTimeZone.local, LogDateTimeZone.est, LogDateTimeZone.pst].contains(logDateTimeZone)) {
+            this._logDateTimeZone = LogDateTimeZone.utc;
         }
         else {
             this._logDateTimeZone = logDateTimeZone;
@@ -33,15 +35,10 @@ class BaseLogger {
         this._logInjector = logInjector !== null && logInjector !== void 0 ? logInjector : null;
         this._enableOtelToDatadogTraceConversion = !!enableOtelToDatadogTraceConversion;
     }
-    get source() { return this._source; }
-    get service() { return this._service; }
-    get env() { return this._env; }
-    get useJsonFormat() { return this._useJsonFormat; }
-    get logInjector() { return this._logInjector; }
     getErrorMessage(exp) {
         let logMessage = "";
         try {
-            if (exp instanceof n_exception_1.Exception)
+            if (exp instanceof Exception)
                 logMessage = exp.toString();
             else if (exp instanceof Error)
                 logMessage = exp.stack;
@@ -57,35 +54,35 @@ class BaseLogger {
     getDateTime() {
         let result = null;
         switch (this._logDateTimeZone) {
-            case log_date_time_zone_1.LogDateTimeZone.utc:
-                result = moment().utc().format();
+            case LogDateTimeZone.utc:
+                result = DateTime.utc().toISO();
                 break;
-            case log_date_time_zone_1.LogDateTimeZone.local:
-                result = moment().format();
+            case LogDateTimeZone.local:
+                result = DateTime.now().setZone("local").toISO();
                 break;
-            case log_date_time_zone_1.LogDateTimeZone.est:
-                result = moment().tz("America/New_York").format();
+            case LogDateTimeZone.est:
+                result = DateTime.now().setZone("America/New_York").toISO();
                 break;
-            case log_date_time_zone_1.LogDateTimeZone.pst:
-                result = moment().tz("America/Los_Angeles").format();
+            case LogDateTimeZone.pst:
+                result = DateTime.now().setZone("America/Los_Angeles").toISO();
                 break;
             default:
-                result = moment().utc().format();
+                result = DateTime.utc().toISO();
                 break;
         }
         return result;
     }
     injectTrace(log, isError = false) {
-        const span = api_1.trace.getSpan(api_1.context.active());
+        const span = trace.getSpan(context.active());
         if (span) {
             const spanContext = span.spanContext();
-            if ((0, api_1.isSpanContextValid)(spanContext)) {
+            if (isSpanContextValid(spanContext)) {
                 log["trace_id"] = spanContext.traceId;
                 log["span_id"] = spanContext.spanId;
                 log["trace_flags"] = `0${spanContext.traceFlags.toString(16)}`;
                 if (isError)
                     span.setStatus({
-                        code: api_1.SpanStatusCode.ERROR,
+                        code: SpanStatusCode.ERROR,
                         message: log.message
                     });
                 if (this._enableOtelToDatadogTraceConversion) {
@@ -162,5 +159,4 @@ class BaseLogger {
             buffer[offset + 3];
     }
 }
-exports.BaseLogger = BaseLogger;
 //# sourceMappingURL=base-logger.js.map

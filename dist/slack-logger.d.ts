@@ -1,10 +1,10 @@
 import { Exception } from "@nivinjoseph/n-exception";
-import { BaseLogger } from "./base-logger";
-import { LoggerConfig } from "./logger-config";
-import { Logger } from "./logger";
-import { LogRecord } from "./log-record";
 import { Disposable } from "@nivinjoseph/n-util";
-export declare type SlackLoggerConfig = Pick<LoggerConfig, "logDateTimeZone" | "logInjector"> & {
+import { BaseLogger } from "./base-logger.js";
+import { LogRecord } from "./log-record.js";
+import { Logger } from "./logger.js";
+import { LoggerConfig } from "./logger-config.js";
+export type SlackLoggerConfig = Pick<LoggerConfig, "logDateTimeZone" | "logInjector"> & {
     slackBotToken: string;
     slackBotChannel: string;
     slackUserName?: string;

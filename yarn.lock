@@ -79,26 +79,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nivinjoseph/n-config@npm:^1.0.38":
-  version: 1.0.38
-  resolution: "@nivinjoseph/n-config@npm:1.0.38"
+"@nivinjoseph/n-config@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "@nivinjoseph/n-config@npm:2.0.1"
   dependencies:
-    "@nivinjoseph/n-defensive": "npm:^1.0.41"
-    "@nivinjoseph/n-exception": "npm:^1.0.26"
-    "@nivinjoseph/n-ext": "npm:^1.1.36"
-    "@nivinjoseph/n-util": "npm:^1.0.81"
-  checksum: c54e5f4be8cbd1f2d994f63cbfe63774fcb971a0e9f5ff99ce15ce50e46e46049f52fe8ee085389aea9d0822b763f81ba892aae45addbc9bb9a25e2d6d8405b7
-  languageName: node
-  linkType: hard
-
-"@nivinjoseph/n-defensive@npm:^1.0.41, @nivinjoseph/n-defensive@npm:^1.0.44":
-  version: 1.0.44
-  resolution: "@nivinjoseph/n-defensive@npm:1.0.44"
-  dependencies:
-    "@nivinjoseph/n-exception": "npm:^1.0.26"
-    "@nivinjoseph/n-ext": "npm:^1.1.36"
-    tslib: "npm:^2.4.0"
-  checksum: abfe2f8705b75fe521f52687cf7a58fcaa4b05f42d87bef59144e69336ca1d6f79b7fd98e811d7e35a876a07db816760d4f9c216286a062f7f2c2e923c764d99
+    "@nivinjoseph/n-defensive": "npm:^2.0.1"
+    "@nivinjoseph/n-exception": "npm:^2.0.1"
+    "@nivinjoseph/n-ext": "npm:^2.0.1"
+    "@nivinjoseph/n-util": "npm:^2.0.1"
+  checksum: f7062325a3ee09b67c9ad6edace15236584ad0acbaf9f7055b81bfbc5a6342674239eea62d2209b776867cd1bc9372fccfa1c90d68a5a042e50daaf4373939a8
   languageName: node
   linkType: hard
 
@@ -113,16 +102,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nivinjoseph/n-exception@npm:^1.0.26":
-  version: 1.0.26
-  resolution: "@nivinjoseph/n-exception@npm:1.0.26"
-  dependencies:
-    "@nivinjoseph/n-ext": "npm:^1.1.35"
-    tslib: "npm:^2.4.0"
-  checksum: 96118f6a866093add3e9754c9ee7fa9407bdd52f66e1fd8927791ae2d58b28847a9dd59a40c7653ce835586b3f836b489150c06f8465456e034a4e3a066965e6
-  languageName: node
-  linkType: hard
-
 "@nivinjoseph/n-exception@npm:^2.0.1":
   version: 2.0.1
   resolution: "@nivinjoseph/n-exception@npm:2.0.1"
@@ -130,16 +109,6 @@ __metadata:
     "@nivinjoseph/n-ext": "npm:^2.0.1"
     tslib: "npm:^2.6.2"
   checksum: 8555f8890f5b8e06d8bc248ec40ac7cca9f0308574c359aadacec7e57081d7adb8baa8c2d1bda10643a56f5db9c020c348fee49d1b4eedfa01fb2966599aa060
-  languageName: node
-  linkType: hard
-
-"@nivinjoseph/n-ext@npm:^1.1.35, @nivinjoseph/n-ext@npm:^1.1.36":
-  version: 1.1.36
-  resolution: "@nivinjoseph/n-ext@npm:1.1.36"
-  dependencies:
-    buffer: "npm:^6.0.3"
-    tslib: "npm:^2.4.0"
-  checksum: 3b64b93eb6483c7b8c411f64408909be6c58fe96003e5a31a92b4adc6e61f674cf8053893c615756c4f82ab8f47682396ce766e1e475e6d7bc739e70346a3eed
   languageName: node
   linkType: hard
 
@@ -157,13 +126,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@nivinjoseph/n-log@workspace:."
   dependencies:
-    "@nivinjoseph/n-config": "npm:^1.0.38"
+    "@nivinjoseph/n-config": "npm:^2.0.1"
     "@nivinjoseph/n-defensive": "npm:^2.0.1"
     "@nivinjoseph/n-exception": "npm:^2.0.1"
     "@nivinjoseph/n-ext": "npm:^2.0.1"
-    "@nivinjoseph/n-util": "npm:^1.1.1"
-    "@opentelemetry/api": "npm:^1.3.0"
-    "@slack/bolt": "npm:^3.16.0"
+    "@nivinjoseph/n-util": "npm:^2.0.1"
+    "@opentelemetry/api": "npm:^1.7.0"
+    "@slack/bolt": "npm:^3.17.0"
     "@types/luxon": "npm:^3.3.6"
     "@types/node": "npm:^20.10"
     "@typescript-eslint/eslint-plugin": "npm:^6.15.0"
@@ -176,19 +145,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@nivinjoseph/n-util@npm:^1.0.81, @nivinjoseph/n-util@npm:^1.1.1":
-  version: 1.1.1
-  resolution: "@nivinjoseph/n-util@npm:1.1.1"
+"@nivinjoseph/n-util@npm:^2.0.1":
+  version: 2.0.1
+  resolution: "@nivinjoseph/n-util@npm:2.0.1"
   dependencies:
-    "@nivinjoseph/n-defensive": "npm:^1.0.44"
-    "@nivinjoseph/n-exception": "npm:^1.0.26"
-    "@nivinjoseph/n-ext": "npm:^1.1.36"
+    "@nivinjoseph/n-defensive": "npm:^2.0.1"
+    "@nivinjoseph/n-exception": "npm:^2.0.1"
+    "@nivinjoseph/n-ext": "npm:^2.0.1"
     luxon: "npm:^3.4.4"
     mustache: "npm:^4.2.0"
     sanitize-html: "npm:^2.11.0"
-    tslib: "npm:^2.4.0"
+    tslib: "npm:^2.6.2"
     uuid: "npm:^9.0.1"
-  checksum: b32da6dd1aba07a41edb17b08b184feb9eff7eb902eee026c28077d9461d8dbe032369a99264373e89855783040a27184770e909d00b0acf06d422f4f29b53cc
+  checksum: 4215d057c7337abcde90fe9292edf3400a5d5c44c6fb44051e93f0a47edd2d78ff47b08f2bade8cd899fc645444d2e7c6065cdcb0d56d99206cf3aeaa2b323d0
   languageName: node
   linkType: hard
 
@@ -219,14 +188,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/api@npm:^1.3.0":
+"@opentelemetry/api@npm:^1.7.0":
   version: 1.7.0
   resolution: "@opentelemetry/api@npm:1.7.0"
   checksum: b5468115d1cec45dd2b86b39210fdc03620a93b9f07c3d20b14081f75e2f7c9b37ceceeb60d5f35c6d4f9819ae07eee0b4874e53e7362376db21db1e00f483f8
   languageName: node
   linkType: hard
 
-"@slack/bolt@npm:^3.16.0":
+"@slack/bolt@npm:^3.17.0":
   version: 3.17.0
   resolution: "@slack/bolt@npm:3.17.0"
   dependencies:
@@ -3053,7 +3022,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:^2.4.0, tslib@npm:^2.6.2":
+"tslib@npm:^2.6.2":
   version: 2.6.2
   resolution: "tslib@npm:2.6.2"
   checksum: e03a8a4271152c8b26604ed45535954c0a45296e32445b4b87f8a5abdb2421f40b59b4ca437c4346af0f28179780d604094eb64546bee2019d903d01c6c19bdb

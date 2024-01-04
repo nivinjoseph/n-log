@@ -1,10 +1,8 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.ConsoleLogger = void 0;
-const base_logger_1 = require("./base-logger");
-const log_prefix_1 = require("./log-prefix");
+import { BaseLogger } from "./base-logger.js";
+import { LogPrefix } from "./log-prefix.js";
+import chalk from "chalk";
 // public
-class ConsoleLogger extends base_logger_1.BaseLogger {
+export class ConsoleLogger extends BaseLogger {
     constructor() {
         super(...arguments);
         this._stream = process.stdout;
@@ -27,7 +25,7 @@ class ConsoleLogger extends base_logger_1.BaseLogger {
                 this._stream.write(JSON.stringify(log) + "\n");
             }
             else {
-                this._stream.write(`${this.getDateTime()} ${log_prefix_1.LogPrefix.debug} ${debug}\n`);
+                this._stream.write(`${this.getDateTime()} ${LogPrefix.debug} ${debug}\n`);
             }
         }
         return Promise.resolve();
@@ -49,7 +47,7 @@ class ConsoleLogger extends base_logger_1.BaseLogger {
             this._stream.write(JSON.stringify(log) + "\n");
         }
         else {
-            this._stream.write(`${this.getDateTime()} ${log_prefix_1.LogPrefix.info} ${info}\n`);
+            this._stream.write(chalk.blue(`${this.getDateTime()} ${chalk.bold(LogPrefix.info)} ${info}\n`));
         }
         return Promise.resolve();
     }
@@ -70,7 +68,7 @@ class ConsoleLogger extends base_logger_1.BaseLogger {
             this._stream.write(JSON.stringify(log) + "\n");
         }
         else {
-            this._stream.write(`${this.getDateTime()} ${log_prefix_1.LogPrefix.warning} ${this.getErrorMessage(warning)}\n`);
+            this._stream.write(chalk.yellow(`${this.getDateTime()} ${chalk.bold(LogPrefix.warning)} ${this.getErrorMessage(warning)}\n`));
         }
         return Promise.resolve();
     }
@@ -91,10 +89,9 @@ class ConsoleLogger extends base_logger_1.BaseLogger {
             this._stream.write(JSON.stringify(log) + "\n");
         }
         else {
-            this._stream.write(`${this.getDateTime()} ${log_prefix_1.LogPrefix.error} ${this.getErrorMessage(error)}\n`);
+            this._stream.write(chalk.red(`${this.getDateTime()} ${chalk.bold(LogPrefix.error)} ${this.getErrorMessage(error)}\n`));
         }
         return Promise.resolve();
     }
 }
-exports.ConsoleLogger = ConsoleLogger;
 //# sourceMappingURL=console-logger.js.map

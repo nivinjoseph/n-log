@@ -1,14 +1,14 @@
-import "@nivinjoseph/n-ext";
-import { Exception } from "@nivinjoseph/n-exception";
-import * as moment from "moment-timezone";
 import { given } from "@nivinjoseph/n-defensive";
-import * as Fs from "fs";
-import * as Path from "path";
-import { Make, Duration, Mutex } from "@nivinjoseph/n-util";
-import { BaseLogger } from "./base-logger";
-import { LogPrefix } from "./log-prefix";
-import { FileLoggerConfig } from "./file-logger-config";
-import { LogRecord } from "./log-record";
+import { Exception } from "@nivinjoseph/n-exception";
+import "@nivinjoseph/n-ext";
+import { Duration, Make, Mutex } from "@nivinjoseph/n-util";
+import Fs from "node:fs";
+import Path from "node:path";
+import { BaseLogger } from "./base-logger.js";
+import { FileLoggerConfig } from "./file-logger-config.js";
+import { LogPrefix } from "./log-prefix.js";
+import { LogRecord } from "./log-record.js";
+import { DateTime } from "luxon";
 
 
 // public
@@ -17,7 +17,7 @@ export class FileLogger extends BaseLogger
     private readonly _mutex = new Mutex();
     private readonly _logDirPath: string;
     private readonly _retentionDays: number;
-    
+
     private _lastPurgedAt = 0;
 
     /**
@@ -28,18 +28,18 @@ export class FileLogger extends BaseLogger
     public constructor(config: FileLoggerConfig)
     {
         super(config);
-        
+
         const { logDirPath, retentionDays } = config;
-        
+
         given(logDirPath, "logDirPath").ensureHasValue().ensureIsString()
             .ensure(t => Path.isAbsolute(t), "must be absolute");
-            
+
         given(retentionDays, "retentionDays").ensureHasValue().ensureIsNumber().ensure(t => t > 0);
         this._retentionDays = Number.parseInt(retentionDays.toString());
-        
+
         if (!Fs.existsSync(logDirPath))
             Fs.mkdirSync(logDirPath);
-        
+
         this._logDirPath = logDirPath;
     }
 
@@ -64,18 +64,18 @@ export class FileLogger extends BaseLogger
     {
         await this._writeToLog(LogPrefix.error, this.getErrorMessage(error));
     }
-    
+
     private async _writeToLog(status: LogPrefix, message: string): Promise<void>
     {
         given(status, "status").ensureHasValue().ensureIsEnum(LogPrefix);
         given(message, "message").ensureHasValue().ensureIsString();
-        
+
         const dateTime = this.getDateTime();
-        
+
         if (this.useJsonFormat)
         {
             let level = "";
-            
+
             switch (status)
             {
                 case LogPrefix.debug:
@@ -91,7 +91,7 @@ export class FileLogger extends BaseLogger
                     level = "Error";
                     break;
             }
-            
+
             let log: LogRecord = {
                 source: this.source,
                 service: this.service,
@@ -101,28 +101,28 @@ export class FileLogger extends BaseLogger
                 dateTime,
                 time: new Date().toISOString()
             };
-            
+
             this.injectTrace(log, level === "Error");
-            
+
             if (this.logInjector)
                 log = this.logInjector(log);
-            
+
             message = JSON.stringify(log);
         }
         else
         {
             message = `${dateTime} ${status} ${message}`;
         }
-        
+
         const logFileName = `${dateTime.substr(0, 13)}.log`;
         const logFilePath = Path.join(this._logDirPath, logFileName);
-        
+
         await this._mutex.lock();
         try 
         {
             await Fs.promises.appendFile(logFilePath, `\n${message}`);
 
-            await this._purgeLogs();   
+            await this._purgeLogs();
         }
         catch (error)
         {
@@ -133,22 +133,22 @@ export class FileLogger extends BaseLogger
             this._mutex.release();
         }
     }
-    
+
     private async _purgeLogs(): Promise<void>
     {
         const now = Date.now();
         if (this._lastPurgedAt && this._lastPurgedAt > (now - Duration.fromDays(this._retentionDays).toMilliSeconds()))
             return;
-        
+
         const files = await Make.callbackToPromise<ReadonlyArray<string>>(Fs.readdir)(this._logDirPath);
         await files.forEachAsync(async (file) =>
         {
             const filePath = Path.join(this._logDirPath, file);
             const stats = await Make.callbackToPromise<Fs.Stats>(Fs.stat)(filePath);
-            if (stats.isFile() && moment(stats.birthtime).valueOf() < (now - Duration.fromDays(this._retentionDays).toMilliSeconds()))
+            if (stats.isFile() && DateTime.fromJSDate(stats.birthtime).valueOf() < (now - Duration.fromDays(this._retentionDays).toMilliSeconds()))
                 await Make.callbackToPromise(Fs.unlink)(filePath);
         }, 1);
-        
+
         this._lastPurgedAt = now;
     }
 }

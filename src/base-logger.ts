@@ -1,11 +1,11 @@
-import { Exception } from "@nivinjoseph/n-exception";
-import { LogDateTimeZone } from "./log-date-time-zone";
-import { Logger } from "./logger";
-import * as moment from "moment-timezone";
-import { LoggerConfig } from "./logger-config";
-import { LogRecord } from "./log-record";
 import { ConfigurationManager } from "@nivinjoseph/n-config";
-import { context, trace, isSpanContextValid, SpanStatusCode } from "@opentelemetry/api";
+import { Exception } from "@nivinjoseph/n-exception";
+import { SpanStatusCode, context, isSpanContextValid, trace } from "@opentelemetry/api";
+import { LogDateTimeZone } from "./log-date-time-zone.js";
+import { LogRecord } from "./log-record.js";
+import { Logger } from "./logger.js";
+import { LoggerConfig } from "./logger-config.js";
+import { DateTime } from "luxon";
 
 
 export abstract class BaseLogger implements Logger
@@ -19,14 +19,14 @@ export abstract class BaseLogger implements Logger
     private readonly _useJsonFormat: boolean;
     private readonly _logInjector: ((record: LogRecord) => LogRecord) | null;
     private readonly _enableOtelToDatadogTraceConversion: boolean;
-    
+
     protected get source(): string { return this._source; }
     protected get service(): string { return this._service; }
     protected get env(): string { return this._env; }
-    
+
     protected get useJsonFormat(): boolean { return this._useJsonFormat; }
     protected get logInjector(): ((record: LogRecord) => LogRecord) | null { return this._logInjector; }
-    
+
 
     /**
      * 
@@ -38,7 +38,7 @@ export abstract class BaseLogger implements Logger
     {
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const { logDateTimeZone, useJsonFormat, logInjector, enableOtelToDatadogTraceConversion } = config ?? {};
-        
+
         if (!logDateTimeZone || logDateTimeZone.isEmptyOrWhiteSpace() ||
             ![LogDateTimeZone.utc, LogDateTimeZone.local, LogDateTimeZone.est, LogDateTimeZone.pst].contains(logDateTimeZone))
         {
@@ -48,19 +48,19 @@ export abstract class BaseLogger implements Logger
         {
             this._logDateTimeZone = logDateTimeZone;
         }
-        
+
         this._useJsonFormat = !!useJsonFormat;
         this._logInjector = logInjector ?? null;
-        
+
         this._enableOtelToDatadogTraceConversion = !!enableOtelToDatadogTraceConversion;
     }
-    
-    
+
+
     public abstract logDebug(debug: string): Promise<void>;
     public abstract logInfo(info: string): Promise<void>;
     public abstract logWarning(warning: string | Exception): Promise<void>;
     public abstract logError(error: string | Exception): Promise<void>;
-    
+
     protected getErrorMessage(exp: Exception | Error | any): string
     {
         let logMessage = "";
@@ -89,25 +89,25 @@ export abstract class BaseLogger implements Logger
         switch (this._logDateTimeZone)
         {
             case LogDateTimeZone.utc:
-                result = moment().utc().format();
+                result = DateTime.utc().toISO();
                 break;
             case LogDateTimeZone.local:
-                result = moment().format();
+                result = DateTime.now().setZone("local").toISO()!;
                 break;
             case LogDateTimeZone.est:
-                result = moment().tz("America/New_York").format();
+                result = DateTime.now().setZone("America/New_York").toISO()!;
                 break;
             case LogDateTimeZone.pst:
-                result = moment().tz("America/Los_Angeles").format();
+                result = DateTime.now().setZone("America/Los_Angeles").toISO()!;
                 break;
             default:
-                result = moment().utc().format();
+                result = DateTime.utc().toISO();
                 break;
         }
 
         return result;
     }
-    
+
     protected injectTrace(log: LogRecord & Record<string, any>, isError = false): void
     {
         const span = trace.getSpan(context.active());
@@ -121,14 +121,14 @@ export abstract class BaseLogger implements Logger
                 log["trace_id"] = spanContext.traceId;
                 log["span_id"] = spanContext.spanId;
                 log["trace_flags"] = `0${spanContext.traceFlags.toString(16)}`;
-                
+
                 if (isError)
                     span.setStatus({
                         code: SpanStatusCode.ERROR,
                         message: log.message
                     });
-                
-                if(this._enableOtelToDatadogTraceConversion)
+
+                if (this._enableOtelToDatadogTraceConversion)
                 {
                     const traceIdEnd = spanContext.traceId.slice(spanContext.traceId.length / 2);
                     log["dd.trace_id"] = this._toNumberString(this._fromString(traceIdEnd, 16));
@@ -137,7 +137,7 @@ export abstract class BaseLogger implements Logger
             }
         }
     }
-    
+
     private _toNumberString(buffer: Uint8Array, radix?: number): string
     {
         let high = this._readInt32(buffer, 0);
@@ -161,7 +161,7 @@ export abstract class BaseLogger implements Logger
 
         return str;
     }
-    
+
     // Convert a numerical string to a buffer using the specified radix.
     private _fromString(str: string, raddix: number): Uint8Array
     {
@@ -209,7 +209,7 @@ export abstract class BaseLogger implements Logger
 
         return buffer;
     }
-    
+
     // Write unsigned integer bytes to a buffer.
     private _writeUInt32BE(buffer: Uint8Array, value: number, offset: number): void
     {
@@ -221,13 +221,13 @@ export abstract class BaseLogger implements Logger
         value = value >> 8;
         buffer[0 + offset] = value & 255;
     }
-    
+
     // Read a buffer to unsigned integer bytes.
     private _readInt32(buffer: Uint8Array, offset: number): number
     {
-    return (buffer[offset + 0] * 16777216) +
-        (buffer[offset + 1] << 16) +
-        (buffer[offset + 2] << 8) +
-        buffer[offset + 3];
+        return (buffer[offset + 0] * 16777216) +
+            (buffer[offset + 1] << 16) +
+            (buffer[offset + 2] << 8) +
+            buffer[offset + 3];
     }
 }

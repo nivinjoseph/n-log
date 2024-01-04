@@ -1,6 +1,7 @@
 import { ConfigurationManager } from "@nivinjoseph/n-config";
-import * as Assert from "assert";
-import { LogDateTimeZone, SlackLogger } from "../src";
+import assert from "node:assert";
+import { describe, test } from "node:test";
+import { LogDateTimeZone, SlackLogger } from "../src/index.js";
 
 
 function doSomethingStupid(): void
@@ -10,9 +11,9 @@ function doSomethingStupid(): void
     console.log(s.trim());
 }
 
-suite.only("SlackLogger tests", () =>
+await describe("SlackLogger tests", async () =>
 {
-    test("Basic tests", async () =>
+    await test("Basic tests", async () =>
     {
         const logger = new SlackLogger({
             slackBotToken: ConfigurationManager.getConfig("slackBotToken"),
@@ -21,15 +22,15 @@ suite.only("SlackLogger tests", () =>
             // slackUserImage: "https://www.advancedaircharters.com/static/959dd2cfbff77d3dd8ee907b539f8d1b/1035a/footer-logo.png",
             logDateTimeZone: LogDateTimeZone.est
         });
-        
+
         await logger.logDebug("Hello world");
-        
+
         await logger.logInfo("I am an info");
 
         await logger.logWarning("I am a warning");
 
         await logger.logError("I am an error");
-        
+
         try 
         {
             doSomethingStupid();
@@ -38,9 +39,9 @@ suite.only("SlackLogger tests", () =>
         {
             await logger.logError(error as any);
         }
-        
+
         await logger.dispose();
 
-        Assert.ok(true);
+        assert.ok(true);
     });
 });

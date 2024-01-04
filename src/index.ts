@@ -1,21 +1,18 @@
 import "@nivinjoseph/n-ext";
-import { Logger } from "./logger";
-import { LogDateTimeZone } from "./log-date-time-zone";
-import { ConsoleLogger } from "./console-logger";
-import { FileLogger } from "./file-logger";
-import { LoggerConfig } from "./logger-config";
-import { FileLoggerConfig } from "./file-logger-config";
-import { LogRecord } from "./log-record";
-import { SlackLogger, SlackLoggerConfig } from "./slack-logger";
+import { ConsoleLogger } from "./console-logger.js";
+import { FileLoggerConfig } from "./file-logger-config.js";
+import { FileLogger } from "./file-logger.js";
+import { LogDateTimeZone } from "./log-date-time-zone.js";
+import { LogRecord } from "./log-record.js";
+import { LoggerConfig } from "./logger-config.js";
+import { Logger } from "./logger.js";
+import { SlackLogger, SlackLoggerConfig } from "./slack-logger.js";
 
 
 export
 {
-    Logger, LoggerConfig, LogRecord, LogDateTimeZone,
-    
+
     ConsoleLogger,
-    
-    FileLogger, FileLoggerConfig,
-    
-    SlackLogger, SlackLoggerConfig
+
+    FileLogger, FileLoggerConfig, LogDateTimeZone, LogRecord, Logger, LoggerConfig, SlackLogger, SlackLoggerConfig
 };

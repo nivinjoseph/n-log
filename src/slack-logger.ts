@@ -1,12 +1,12 @@
-import { Exception } from "@nivinjoseph/n-exception";
-import { BaseLogger } from "./base-logger";
-import { App, Receiver } from "@slack/bolt";
-import { StringIndexed } from "@slack/bolt/dist/types/helpers";
 import { given } from "@nivinjoseph/n-defensive";
-import { LoggerConfig } from "./logger-config";
-import { Logger } from "./logger";
-import { LogRecord } from "./log-record";
+import { Exception } from "@nivinjoseph/n-exception";
 import { Disposable, Duration } from "@nivinjoseph/n-util";
+import * as Slack from "@slack/bolt";
+import { StringIndexed } from "@slack/bolt/dist/types/helpers.js";
+import { BaseLogger } from "./base-logger.js";
+import { LogRecord } from "./log-record.js";
+import { Logger } from "./logger.js";
+import { LoggerConfig } from "./logger-config.js";
 
 
 export type SlackLoggerConfig = Pick<LoggerConfig, "logDateTimeZone" | "logInjector"> & {
@@ -26,66 +26,66 @@ export class SlackLogger extends BaseLogger implements Disposable
     private readonly _includeError: boolean;
     private readonly _logFilter: (record: LogRecord) => boolean;
     private readonly _fallbackLogger: Logger | null;
-    private readonly _app: App;   
+    private readonly _app: Slack.App;
     private readonly _channel: string;
     private readonly _userName: string;
     private readonly _userImage: string = ":robot_face:";
     private readonly _userImageIsEmoji: boolean;
     private _messages = new Array<SlackMessage>();
-    private readonly _timer: NodeJS.Timer;
+    private readonly _timer: NodeJS.Timeout;
     private _isDisposed = false;
     private _disposePromise: Promise<void> | null = null;
-    
-    
+
+
     public constructor(config: SlackLoggerConfig)
     {
         super(config);
-        
+
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const { slackBotToken, slackBotChannel, slackUserName, slackUserImage, logFilter } = config;
 
         given(slackBotToken, "slackBotToken").ensureHasValue().ensureIsString();
-        this._app = new App({
+        this._app = new Slack.App({
             receiver: new DummyReceiver(),
             token: slackBotToken
         });
-        
+
         given(slackBotChannel, "slackBotChannel").ensureHasValue().ensureIsString();
         this._channel = slackBotChannel;
-        
+
         given(slackUserName, "slackUserName").ensureIsString();
         if (slackUserName != null && slackUserName.isNotEmptyOrWhiteSpace())
             this._userName = slackUserName;
         else
             this._userName = this.service;
-        
+
         given(slackUserImage, "slackUserImage").ensureIsString();
         if (slackUserImage != null && slackUserImage.isNotEmptyOrWhiteSpace())
             this._userImage = slackUserImage.trim();
-        
+
         this._userImageIsEmoji = this._userImage.startsWith(":") && this._userImage.endsWith(":");
-        
+
         const allFilters = ["Info", "Warn", "Error"];
         const filter = config.filter ?? allFilters;
         given(filter, "filter").ensureIsArray().ensure(t => t.every(u => allFilters.contains(u)));
         this._includeInfo = filter.contains("Info");
         this._includeWarn = filter.contains("Warn");
         this._includeError = filter.contains("Error");
-        
+
         given(logFilter, "logFilter").ensureIsFunction();
-        
+
         this._logFilter = logFilter ?? ((_: LogRecord): boolean => true);
-        
+
         this._fallbackLogger = config.fallback ?? null;
-        
+
         this._timer = setInterval(() =>
         {
             this._flushMessages()
                 .catch(e => this._fallbackLogger?.logError(e).catch(e => console.error(e)) ?? console.error(e));
         }, Duration.fromSeconds(30).toMilliSeconds());
     }
-    
-    
+
+
     public async logDebug(debug: string): Promise<void>
     {
         if (this.env === "dev")
@@ -100,19 +100,19 @@ export class SlackLogger extends BaseLogger implements Disposable
                 time: new Date().toISOString(),
                 color: "#F8F8F8"
             };
-            
+
             if (this.logInjector)
                 log = this.logInjector(log) as SlackMessage;
-            
+
             this._messages.push(log);
         }
     }
-    
+
     public async logInfo(info: string): Promise<void>
     {
         if (!this._includeInfo)
             return;
-        
+
         let log: SlackMessage = {
             source: this.source,
             service: this.service,
@@ -123,21 +123,21 @@ export class SlackLogger extends BaseLogger implements Disposable
             time: new Date().toISOString(),
             color: "#259D2F"
         };
-        
+
         if (!this._logFilter(log))
             return;
-        
+
         if (this.logInjector)
             log = this.logInjector(log) as SlackMessage;
 
         this._messages.push(log);
     }
-    
+
     public async logWarning(warning: string | Exception): Promise<void>
     {
         if (!this._includeWarn)
             return;
-        
+
         let log: SlackMessage = {
             source: this.source,
             service: this.service,
@@ -148,21 +148,21 @@ export class SlackLogger extends BaseLogger implements Disposable
             time: new Date().toISOString(),
             color: "#F1AB2A"
         };
-        
+
         if (!this._logFilter(log))
             return;
-        
+
         if (this.logInjector)
             log = this.logInjector(log) as SlackMessage;
 
         this._messages.push(log);
     }
-    
+
     public async logError(error: string | Exception): Promise<void>
     {
         if (!this._includeError)
             return;
-        
+
         let log: SlackMessage = {
             source: this.source,
             service: this.service,
@@ -173,16 +173,16 @@ export class SlackLogger extends BaseLogger implements Disposable
             time: new Date().toISOString(),
             color: "#EF401D"
         };
-        
+
         if (!this._logFilter(log))
             return;
-        
+
         if (this.logInjector)
             log = this.logInjector(log) as SlackMessage;
 
         this._messages.push(log);
     }
-    
+
     public dispose(): Promise<void>
     {
         if (!this._isDisposed)
@@ -191,21 +191,21 @@ export class SlackLogger extends BaseLogger implements Disposable
             clearInterval(this._timer);
             this._disposePromise = this._flushMessages();
         }
-        
+
         return this._disposePromise!;
     }
-    
+
     private async _flushMessages(): Promise<void>
     {
         if (this._messages.isEmpty)
             return;
-        
+
         const messagesToFlush = this._messages;
         this._messages = new Array<SlackMessage>();
-        
+
         await this._postMessages(messagesToFlush);
     }
-    
+
     private async _postMessages(messages: ReadonlyArray<SlackMessage>): Promise<void>
     {
         try 
@@ -238,7 +238,7 @@ export class SlackLogger extends BaseLogger implements Disposable
                         ]
                     };
                 })
-            });   
+            });
         }
         catch (error)
         {
@@ -300,20 +300,20 @@ export class SlackLogger extends BaseLogger implements Disposable
 
 type SlackMessage = LogRecord & { color: string; };
 
-class DummyReceiver implements Receiver
+class DummyReceiver implements Slack.Receiver
 {
     // @ts-expect-error: not used atm
     public init(app: App<StringIndexed>): void
     {
         // no-op
     }
-    
+
     // @ts-expect-error: not used atm
     public start(...args: Array<any>): Promise<unknown>
     {
         return Promise.resolve();
     }
-    
+
     // @ts-expect-error: not used atm
     public stop(...args: Array<any>): Promise<unknown>
     {

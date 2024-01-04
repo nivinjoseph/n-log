@@ -1,13 +1,15 @@
 import { Exception } from "@nivinjoseph/n-exception";
-import { BaseLogger } from "./base-logger";
-import { LogPrefix } from "./log-prefix";
-import { LogRecord } from "./log-record";
+import { BaseLogger } from "./base-logger.js";
+import { LogPrefix } from "./log-prefix.js";
+import { LogRecord } from "./log-record.js";
+import chalk from "chalk";
 
 // public
 export class ConsoleLogger extends BaseLogger
 {
     private readonly _stream = process.stdout;
-    
+
+
     public logDebug(debug: string): Promise<void>
     {
         if (this.env === "dev")
@@ -23,23 +25,23 @@ export class ConsoleLogger extends BaseLogger
                     dateTime: this.getDateTime(),
                     time: new Date().toISOString()
                 };
-                
+
                 this.injectTrace(log);
-                
+
                 if (this.logInjector)
                     log = this.logInjector(log);
-                
-                this._stream.write(JSON.stringify(log) + "\n");    
+
+                this._stream.write(JSON.stringify(log) + "\n");
             }
             else
             {
-                this._stream.write(`${this.getDateTime()} ${LogPrefix.debug} ${debug}\n`);    
+                this._stream.write(`${this.getDateTime()} ${LogPrefix.debug} ${debug}\n`);
             }
         }
-        
+
         return Promise.resolve();
     }
-    
+
     public logInfo(info: string): Promise<void>
     {
         if (this.useJsonFormat)
@@ -53,19 +55,19 @@ export class ConsoleLogger extends BaseLogger
                 dateTime: this.getDateTime(),
                 time: new Date().toISOString()
             };
-            
+
             this.injectTrace(log);
-            
+
             if (this.logInjector)
                 log = this.logInjector(log);
-            
-            this._stream.write(JSON.stringify(log) + "\n");    
+
+            this._stream.write(JSON.stringify(log) + "\n");
         }
         else
         {
-            this._stream.write(`${this.getDateTime()} ${LogPrefix.info} ${info}\n`);    
+            this._stream.write(chalk.blue(`${this.getDateTime()} ${chalk.bold(LogPrefix.info)} ${info}\n`));
         }
-        
+
         return Promise.resolve();
     }
 
@@ -82,9 +84,9 @@ export class ConsoleLogger extends BaseLogger
                 dateTime: this.getDateTime(),
                 time: new Date().toISOString()
             };
-            
+
             this.injectTrace(log);
-            
+
             if (this.logInjector)
                 log = this.logInjector(log);
 
@@ -92,9 +94,9 @@ export class ConsoleLogger extends BaseLogger
         }
         else
         {
-            this._stream.write(`${this.getDateTime()} ${LogPrefix.warning} ${this.getErrorMessage(warning)}\n`);
+            this._stream.write(chalk.yellow(`${this.getDateTime()} ${chalk.bold(LogPrefix.warning)} ${this.getErrorMessage(warning)}\n`));
         }
-        
+
         return Promise.resolve();
     }
 
@@ -111,9 +113,9 @@ export class ConsoleLogger extends BaseLogger
                 dateTime: this.getDateTime(),
                 time: new Date().toISOString()
             };
-            
+
             this.injectTrace(log, true);
-            
+
             if (this.logInjector)
                 log = this.logInjector(log);
 
@@ -121,9 +123,9 @@ export class ConsoleLogger extends BaseLogger
         }
         else
         {
-            this._stream.write(`${this.getDateTime()} ${LogPrefix.error} ${this.getErrorMessage(error)}\n`);
+            this._stream.write(chalk.red(`${this.getDateTime()} ${chalk.bold(LogPrefix.error)} ${this.getErrorMessage(error)}\n`));
         }
-        
+
         return Promise.resolve();
     }
 }

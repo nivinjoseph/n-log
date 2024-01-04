@@ -1,6 +1,6 @@
 {
     "name": "@nivinjoseph/n-log",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "description": "Logging framework",
     "packageManager": "yarn@4.0.2",
     "type": "module",

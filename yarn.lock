@@ -131,7 +131,7 @@ __metadata:
     "@nivinjoseph/n-exception": "npm:^2.0.1"
     "@nivinjoseph/n-ext": "npm:^2.0.1"
     "@nivinjoseph/n-util": "npm:^2.0.1"
-    "@opentelemetry/api": "npm:^1.7.0"
+    "@opentelemetry/api": "npm:^1.9.0"
     "@slack/bolt": "npm:^3.17.0"
     "@types/luxon": "npm:^3.3.6"
     "@types/node": "npm:^20.10"
@@ -188,10 +188,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/api@npm:^1.7.0":
-  version: 1.7.0
-  resolution: "@opentelemetry/api@npm:1.7.0"
-  checksum: b5468115d1cec45dd2b86b39210fdc03620a93b9f07c3d20b14081f75e2f7c9b37ceceeb60d5f35c6d4f9819ae07eee0b4874e53e7362376db21db1e00f483f8
+"@opentelemetry/api@npm:^1.9.0":
+  version: 1.9.0
+  resolution: "@opentelemetry/api@npm:1.9.0"
+  checksum: 9aae2fe6e8a3a3eeb6c1fdef78e1939cf05a0f37f8a4fae4d6bf2e09eb1e06f966ece85805626e01ba5fab48072b94f19b835449e58b6d26720ee19a58298add
   languageName: node
   linkType: hard
 

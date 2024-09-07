@@ -19,7 +19,7 @@ export class ConsoleLogger extends BaseLogger {
                     dateTime: this.getDateTime(),
                     time: new Date().toISOString()
                 };
-                // this.injectTrace(log);
+                this.injectTrace(log);
                 if (this.logInjector)
                     log = this.logInjector(log);
                 this._stream.write(JSON.stringify(log) + "\n");
@@ -41,7 +41,7 @@ export class ConsoleLogger extends BaseLogger {
                 dateTime: this.getDateTime(),
                 time: new Date().toISOString()
             };
-            // this.injectTrace(log);
+            this.injectTrace(log);
             if (this.logInjector)
                 log = this.logInjector(log);
             this._stream.write(JSON.stringify(log) + "\n");
@@ -62,7 +62,7 @@ export class ConsoleLogger extends BaseLogger {
                 dateTime: this.getDateTime(),
                 time: new Date().toISOString()
             };
-            // this.injectTrace(log);
+            this.injectTrace(log);
             if (this.logInjector)
                 log = this.logInjector(log);
             this._stream.write(JSON.stringify(log) + "\n");
@@ -83,7 +83,7 @@ export class ConsoleLogger extends BaseLogger {
                 dateTime: this.getDateTime(),
                 time: new Date().toISOString()
             };
-            // this.injectTrace(log, true);
+            this.injectTrace(log, true);
             if (this.logInjector)
                 log = this.logInjector(log);
             this._stream.write(JSON.stringify(log) + "\n");

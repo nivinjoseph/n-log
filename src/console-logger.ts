@@ -4,12 +4,25 @@ import { LogPrefix } from "./log-prefix.js";
 import { LogRecord } from "./log-record.js";
 import chalk from "chalk";
 
-// public
+/**
+ * Logger implementation that writes logs to the console (stdout).
+ * Supports both plain text and JSON formatting.
+ * In plain text mode, uses colors to distinguish between different log levels:
+ * - Info: Blue
+ * - Warning: Yellow
+ * - Error: Red
+ * Debug logs are only output in development environment.
+ */
 export class ConsoleLogger extends BaseLogger
 {
     private readonly _stream = process.stdout;
 
-
+    /**
+     * Logs a debug message to the console.
+     * Only outputs in development environment.
+     * @param debug - The debug message to log
+     * @returns A promise that resolves when the log is written
+     */
     public logDebug(debug: string): Promise<void>
     {
         if (this.env === "dev")
@@ -42,6 +55,11 @@ export class ConsoleLogger extends BaseLogger
         return Promise.resolve();
     }
 
+    /**
+     * Logs an informational message to the console in blue.
+     * @param info - The informational message to log
+     * @returns A promise that resolves when the log is written
+     */
     public logInfo(info: string): Promise<void>
     {
         if (this.useJsonFormat)
@@ -71,6 +89,11 @@ export class ConsoleLogger extends BaseLogger
         return Promise.resolve();
     }
 
+    /**
+     * Logs a warning message or exception to the console in yellow.
+     * @param warning - The warning message or exception to log
+     * @returns A promise that resolves when the log is written
+     */
     public logWarning(warning: string | Exception): Promise<void>
     {
         if (this.useJsonFormat)
@@ -100,6 +123,11 @@ export class ConsoleLogger extends BaseLogger
         return Promise.resolve();
     }
 
+    /**
+     * Logs an error message or exception to the console in red.
+     * @param error - The error message or exception to log
+     * @returns A promise that resolves when the log is written
+     */
     public logError(error: string | Exception): Promise<void>
     {
         if (this.useJsonFormat)

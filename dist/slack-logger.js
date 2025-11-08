@@ -1,8 +1,22 @@
 import { given } from "@nivinjoseph/n-defensive";
 import { Duration } from "@nivinjoseph/n-util";
-import Slack from "@slack/bolt";
+import SlackWebApi from "@slack/web-api";
 import { BaseLogger } from "./base-logger.js";
+/**
+ * Logger implementation that posts logs to a Slack channel.
+ * Features:
+ * - Posts logs as formatted Slack messages with colors
+ * - Configurable log level filtering
+ * - Customizable bot appearance
+ * - Batches messages and sends them every 30 seconds
+ * - Fallback logger support for error handling
+ * - Debug logs only posted in development environment
+ */
 export class SlackLogger extends BaseLogger {
+    /**
+     * Creates a new instance of SlackLogger
+     * @param config - Configuration for the Slack logger
+     */
     constructor(config) {
         var _a, _b;
         super(config);
@@ -13,10 +27,7 @@ export class SlackLogger extends BaseLogger {
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const { slackBotToken, slackBotChannel, slackUserName, slackUserImage, logFilter } = config;
         given(slackBotToken, "slackBotToken").ensureHasValue().ensureIsString();
-        this._app = new Slack.App({
-            receiver: new DummyReceiver(),
-            token: slackBotToken
-        });
+        this._slackWebClient = new SlackWebApi.WebClient(slackBotToken);
         given(slackBotChannel, "slackBotChannel").ensureHasValue().ensureIsString();
         this._channel = slackBotChannel;
         given(slackUserName, "slackUserName").ensureIsString();
@@ -42,6 +53,12 @@ export class SlackLogger extends BaseLogger {
                 .catch(e => { var _a, _b; return (_b = (_a = this._fallbackLogger) === null || _a === void 0 ? void 0 : _a.logError(e).catch(e => console.error(e))) !== null && _b !== void 0 ? _b : console.error(e); });
         }, Duration.fromSeconds(30).toMilliSeconds());
     }
+    /**
+     * Logs a debug message to Slack.
+     * Only posts in development environment.
+     * @param debug - The debug message to log
+     * @returns A promise that resolves when the log is queued
+     */
     async logDebug(debug) {
         if (this.env === "dev") {
             let log = {
@@ -59,6 +76,11 @@ export class SlackLogger extends BaseLogger {
             this._messages.push(log);
         }
     }
+    /**
+     * Logs an informational message to Slack in green.
+     * @param info - The informational message to log
+     * @returns A promise that resolves when the log is queued
+     */
     async logInfo(info) {
         if (!this._includeInfo)
             return;
@@ -78,6 +100,11 @@ export class SlackLogger extends BaseLogger {
             log = this.logInjector(log);
         this._messages.push(log);
     }
+    /**
+     * Logs a warning message or exception to Slack in yellow.
+     * @param warning - The warning message or exception to log
+     * @returns A promise that resolves when the log is queued
+     */
     async logWarning(warning) {
         if (!this._includeWarn)
             return;
@@ -97,6 +124,11 @@ export class SlackLogger extends BaseLogger {
             log = this.logInjector(log);
         this._messages.push(log);
     }
+    /**
+     * Logs an error message or exception to Slack in red.
+     * @param error - The error message or exception to log
+     * @returns A promise that resolves when the log is queued
+     */
     async logError(error) {
         if (!this._includeError)
             return;
@@ -116,6 +148,10 @@ export class SlackLogger extends BaseLogger {
             log = this.logInjector(log);
         this._messages.push(log);
     }
+    /**
+     * Disposes the logger, flushing any remaining messages.
+     * @returns A promise that resolves when disposal is complete
+     */
     dispose() {
         if (!this._isDisposed) {
             this._isDisposed = true;
@@ -124,6 +160,10 @@ export class SlackLogger extends BaseLogger {
         }
         return this._disposePromise;
     }
+    /**
+     * Flushes queued messages to Slack
+     * @returns A promise that resolves when messages are flushed
+     */
     async _flushMessages() {
         if (this._messages.isEmpty)
             return;
@@ -131,9 +171,19 @@ export class SlackLogger extends BaseLogger {
         this._messages = new Array();
         await this._postMessages(messagesToFlush);
     }
+    /**
+     * Posts messages to Slack
+     * @param messages - The messages to post
+     * @returns A promise that resolves when messages are posted
+     */
     async _postMessages(messages) {
         try {
-            await this._app.client.chat.postMessage({
+            // slackMsg: SlackWebApi.ChatPostMessageArguments = {
+            //     username: this._userName,
+            //     icon_emoji: this._userImageIsEmoji ? this._userImage : undefined,
+            //     icon_url: !this._userImageIsEmoji ? this._userImage : undefined,
+            // };
+            await this._slackWebClient.chat.postMessage({
                 username: this._userName,
                 icon_emoji: this._userImageIsEmoji ? this._userImage : undefined,
                 icon_url: !this._userImageIsEmoji ? this._userImage : undefined,
@@ -159,7 +209,7 @@ export class SlackLogger extends BaseLogger {
                             }
                         ]
                     };
-                })
+                }),
             });
         }
         catch (error) {
@@ -212,18 +262,22 @@ export class SlackLogger extends BaseLogger {
         }
     }
 }
-class DummyReceiver {
-    // @ts-expect-error: not used atm
-    init(app) {
-        // no-op
-    }
-    // @ts-expect-error: not used atm
-    start(...args) {
-        return Promise.resolve();
-    }
-    // @ts-expect-error: not used atm
-    stop(...args) {
-        return Promise.resolve();
-    }
-}
+// class DummyReceiver implements Slack.Receiver
+// {
+//     // @ts-expect-error: not used atm
+//     public init(app: App<StringIndexed>): void
+//     {
+//         // no-op
+//     }
+//     // @ts-expect-error: not used atm
+//     public start(...args: Array<any>): Promise<unknown>
+//     {
+//         return Promise.resolve();
+//     }
+//     // @ts-expect-error: not used atm
+//     public stop(...args: Array<any>): Promise<unknown>
+//     {
+//         return Promise.resolve();
+//     }
+// }
 //# sourceMappingURL=slack-logger.js.map

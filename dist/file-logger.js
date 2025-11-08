@@ -6,12 +6,24 @@ import Path from "node:path";
 import { BaseLogger } from "./base-logger.js";
 import { LogPrefix } from "./log-prefix.js";
 import { DateTime } from "luxon";
-// public
+/**
+ * Logger implementation that writes logs to files.
+ * Features:
+ * - Logs are written to files named by hour (YYYY-MM-DD-HH.log)
+ * - Supports both plain text and JSON formatting
+ * - Automatic log file rotation
+ * - Configurable log retention period
+ * - Thread-safe writing using mutex
+ * - Debug logs only written in development environment
+ */
 export class FileLogger extends BaseLogger {
     /**
-     *
-     * @param logDateTimeZone Default is LogDateTimeZone.utc
-     * @param useJsonFormat Default is false
+     * Creates a new instance of FileLogger
+     * @param config - Configuration for the file logger
+     * @param config.logDirPath - Absolute path to the directory where log files will be stored
+     * @param config.retentionDays - Number of days to retain log files before automatic deletion
+     * @param config.logDateTimeZone - Timezone for log timestamps (default: UTC)
+     * @param config.useJsonFormat - Whether to format logs as JSON (default: false)
      */
     constructor(config) {
         super(config);
@@ -26,19 +38,46 @@ export class FileLogger extends BaseLogger {
             Fs.mkdirSync(logDirPath);
         this._logDirPath = logDirPath;
     }
+    /**
+     * Logs a debug message to a file.
+     * Only writes in development environment.
+     * @param debug - The debug message to log
+     * @returns A promise that resolves when the log is written
+     */
     async logDebug(debug) {
         if (this.env === "dev")
             await this._writeToLog(LogPrefix.debug, debug);
     }
+    /**
+     * Logs an informational message to a file
+     * @param info - The informational message to log
+     * @returns A promise that resolves when the log is written
+     */
     async logInfo(info) {
         await this._writeToLog(LogPrefix.info, info);
     }
+    /**
+     * Logs a warning message or exception to a file
+     * @param warning - The warning message or exception to log
+     * @returns A promise that resolves when the log is written
+     */
     async logWarning(warning) {
         await this._writeToLog(LogPrefix.warning, this.getErrorMessage(warning));
     }
+    /**
+     * Logs an error message or exception to a file
+     * @param error - The error message or exception to log
+     * @returns A promise that resolves when the log is written
+     */
     async logError(error) {
         await this._writeToLog(LogPrefix.error, this.getErrorMessage(error));
     }
+    /**
+     * Writes a log message to the appropriate log file
+     * @param status - The log level/status
+     * @param message - The message to log
+     * @returns A promise that resolves when the log is written
+     */
     async _writeToLog(status, message) {
         given(status, "status").ensureHasValue().ensureIsEnum(LogPrefix);
         given(message, "message").ensureHasValue().ensureIsString();
@@ -90,6 +129,10 @@ export class FileLogger extends BaseLogger {
             this._mutex.release();
         }
     }
+    /**
+     * Purges log files older than the retention period
+     * @returns A promise that resolves when the purge is complete
+     */
     async _purgeLogs() {
         const now = Date.now();
         if (this._lastPurgedAt && this._lastPurgedAt > (now - Duration.fromDays(this._retentionDays).toMilliSeconds()))

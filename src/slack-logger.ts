@@ -1,8 +1,7 @@
 import { given } from "@nivinjoseph/n-defensive";
 import { Exception } from "@nivinjoseph/n-exception";
 import { Disposable, Duration } from "@nivinjoseph/n-util";
-import Slack from "@slack/bolt";
-import { StringIndexed } from "@slack/bolt/dist/types/helpers.js";
+import SlackWebApi from "@slack/web-api";
 import { BaseLogger } from "./base-logger.js";
 import { LogRecord } from "./log-record.js";
 import { Logger } from "./logger.js";
@@ -45,7 +44,7 @@ export class SlackLogger extends BaseLogger implements Disposable
     private readonly _includeError: boolean;
     private readonly _logFilter: (record: LogRecord) => boolean;
     private readonly _fallbackLogger: Logger | null;
-    private readonly _app: Slack.App;
+    private readonly _slackWebClient: SlackWebApi.WebClient;
     private readonly _channel: string;
     private readonly _userName: string;
     private readonly _userImage: string = ":robot_face:";
@@ -67,10 +66,7 @@ export class SlackLogger extends BaseLogger implements Disposable
         const { slackBotToken, slackBotChannel, slackUserName, slackUserImage, logFilter } = config;
 
         given(slackBotToken, "slackBotToken").ensureHasValue().ensureIsString();
-        this._app = new Slack.App({
-            receiver: new DummyReceiver(),
-            token: slackBotToken
-        });
+        this._slackWebClient = new SlackWebApi.WebClient(slackBotToken);
 
         given(slackBotChannel, "slackBotChannel").ensureHasValue().ensureIsString();
         this._channel = slackBotChannel;
@@ -265,9 +261,16 @@ export class SlackLogger extends BaseLogger implements Disposable
     {
         try 
         {
-            await this._app.client.chat.postMessage({
+            // slackMsg: SlackWebApi.ChatPostMessageArguments = {
+            //     username: this._userName,
+            //     icon_emoji: this._userImageIsEmoji ? this._userImage : undefined,
+            //     icon_url: !this._userImageIsEmoji ? this._userImage : undefined,
+
+            // };
+
+            await this._slackWebClient.chat.postMessage({
                 username: this._userName,
-                icon_emoji: this._userImageIsEmoji ? this._userImage : undefined,
+                icon_emoji: this._userImageIsEmoji ? this._userImage : undefined as any,
                 icon_url: !this._userImageIsEmoji ? this._userImage : undefined,
                 channel: this._channel,
                 text: `${this.service} [${this.env}]`,
@@ -292,7 +295,7 @@ export class SlackLogger extends BaseLogger implements Disposable
                             }
                         ]
                     };
-                })
+                }),
             });
         }
         catch (error)
@@ -355,23 +358,23 @@ export class SlackLogger extends BaseLogger implements Disposable
 
 type SlackMessage = LogRecord & { color: string; };
 
-class DummyReceiver implements Slack.Receiver
-{
-    // @ts-expect-error: not used atm
-    public init(app: App<StringIndexed>): void
-    {
-        // no-op
-    }
+// class DummyReceiver implements Slack.Receiver
+// {
+//     // @ts-expect-error: not used atm
+//     public init(app: App<StringIndexed>): void
+//     {
+//         // no-op
+//     }
 
-    // @ts-expect-error: not used atm
-    public start(...args: Array<any>): Promise<unknown>
-    {
-        return Promise.resolve();
-    }
+//     // @ts-expect-error: not used atm
+//     public start(...args: Array<any>): Promise<unknown>
+//     {
+//         return Promise.resolve();
+//     }
 
-    // @ts-expect-error: not used atm
-    public stop(...args: Array<any>): Promise<unknown>
-    {
-        return Promise.resolve();
-    }
-}
+//     // @ts-expect-error: not used atm
+//     public stop(...args: Array<any>): Promise<unknown>
+//     {
+//         return Promise.resolve();
+//     }
+// }

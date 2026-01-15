@@ -5,7 +5,6 @@ import Fs from "node:fs";
 import Path from "node:path";
 import { BaseLogger } from "./base-logger.js";
 import { LogPrefix } from "./log-prefix.js";
-import { DateTime } from "luxon";
 /**
  * Logger implementation that writes logs to files.
  * Features:
@@ -141,7 +140,7 @@ export class FileLogger extends BaseLogger {
         await files.forEachAsync(async (file) => {
             const filePath = Path.join(this._logDirPath, file);
             const stats = await Make.callbackToPromise(Fs.stat)(filePath);
-            if (stats.isFile() && DateTime.fromJSDate(stats.birthtime).valueOf() < (now - Duration.fromDays(this._retentionDays).toMilliSeconds()))
+            if (stats.isFile() && stats.birthtimeMs < (now - Duration.fromDays(this._retentionDays).toMilliSeconds()))
                 await Make.callbackToPromise(Fs.unlink)(filePath);
         }, 1);
         this._lastPurgedAt = now;

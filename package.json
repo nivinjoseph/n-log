@@ -1,6 +1,6 @@
 {
     "name": "@nivinjoseph/n-log",
-    "version": "3.0.5",
+    "version": "3.0.6",
     "description": "Logging framework",
     "packageManager": "yarn@4.0.2",
     "type": "module",
@@ -16,7 +16,7 @@
         "clean-test": "find ./test -name '*.js' -delete -o -name '*.map' -delete",
         "clean-dist": "find ./dist -name '*.js' -delete -o -name '*.map' -delete -o -name '*.ts' -delete",
         "clean-all": "yarn clean-src && yarn clean-test && yarn clean-dist",
-        "publish-package": "yarn ts-build-dist && git add . && git commit -m 'preparing to publish new version' && npm version patch && git push && npm publish --access=public"
+        "publish-package": "yarn ts-build-dist && git add . && git commit -m 'preparing to publish new version' && git push && npm publish --access=public"
     },
     "repository": {
         "type": "git",
@@ -35,7 +35,6 @@
     "devDependencies": {
         "@eslint/js": "^9.39.1",
         "@stylistic/eslint-plugin": "^5.5.0",
-        "@types/luxon": "^3.7.1",
         "@types/node": "^24.10",
         "eslint": "^9.39.1",
         "eslint-import-resolver-typescript": "^4.4.4",
@@ -44,15 +43,14 @@
         "typescript-eslint": "^8.46.3"
     },
     "dependencies": {
-        "@nivinjoseph/n-config": "^2.0.2",
+        "@nivinjoseph/n-config": "^2.0.3",
         "@nivinjoseph/n-defensive": "^2.0.2",
         "@nivinjoseph/n-exception": "^2.0.2",
         "@nivinjoseph/n-ext": "^2.0.2",
-        "@nivinjoseph/n-util": "^3.0.2",
+        "@nivinjoseph/n-util": "^3.2.0",
         "@opentelemetry/api": "^1.9.0",
-        "@slack/web-api": "^7.12.0",
-        "chalk": "^5.6.2",
-        "luxon": "^3.7.2"
+        "@slack/web-api": "^7.13.0",
+        "chalk": "^5.6.2"
     },
     "engines": {
         "node": ">=24.10"

@@ -2,7 +2,7 @@ import { ConfigurationManager } from "@nivinjoseph/n-config";
 import { Exception } from "@nivinjoseph/n-exception";
 import { SpanStatusCode, context, isSpanContextValid, trace } from "@opentelemetry/api";
 import { LogDateTimeZone } from "./log-date-time-zone.js";
-import { DateTime } from "luxon";
+import { DateTime } from "@nivinjoseph/n-util";
 /**
  * Abstract base class that provides common logging functionality.
  * Implements the Logger interface and provides shared functionality for all logger implementations.
@@ -86,19 +86,19 @@ export class BaseLogger {
         let result = null;
         switch (this._logDateTimeZone) {
             case LogDateTimeZone.utc:
-                result = DateTime.utc().toISO();
+                result = DateTime.now("utc").toStringISO();
                 break;
             case LogDateTimeZone.local:
-                result = DateTime.now().setZone("local").toISO();
+                result = DateTime.now(DateTime.currentZone).toStringISO();
                 break;
             case LogDateTimeZone.est:
-                result = DateTime.now().setZone("America/New_York").toISO();
+                result = DateTime.now("America/New_York").toStringISO();
                 break;
             case LogDateTimeZone.pst:
-                result = DateTime.now().setZone("America/Los_Angeles").toISO();
+                result = DateTime.now("America/Los_Angeles").toStringISO();
                 break;
             default:
-                result = DateTime.utc().toISO();
+                result = DateTime.now("utc").toStringISO();
                 break;
         }
         return result;

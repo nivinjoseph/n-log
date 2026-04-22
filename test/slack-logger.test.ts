@@ -16,8 +16,8 @@ await describe("SlackLogger tests", async () =>
     await test("Basic tests", async () =>
     {
         const logger = new SlackLogger({
-            slackBotToken: ConfigurationManager.getConfig("slackBotToken"),
-            slackBotChannel: ConfigurationManager.getConfig("slackBotChannel"),
+            slackBotToken: ConfigurationManager.requireStringConfig("slackBotToken"),
+            slackBotChannel: ConfigurationManager.requireStringConfig("slackBotChannel"),
             slackUserName: "n-log test",
             // slackUserImage: "https://www.advancedaircharters.com/static/959dd2cfbff77d3dd8ee907b539f8d1b/1035a/footer-logo.png",
             logDateTimeZone: LogDateTimeZone.est

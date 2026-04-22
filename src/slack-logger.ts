@@ -270,6 +270,7 @@ export class SlackLogger extends BaseLogger implements Disposable
 
             await this._slackWebClient.chat.postMessage({
                 username: this._userName,
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
                 icon_emoji: this._userImageIsEmoji ? this._userImage : undefined as any,
                 icon_url: !this._userImageIsEmoji ? this._userImage : undefined,
                 channel: this._channel,

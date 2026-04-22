@@ -5,7 +5,7 @@ import { LogDateTimeZone } from "./log-date-time-zone.js";
 import { LogRecord } from "./log-record.js";
 import { Logger } from "./logger.js";
 import { LoggerConfig } from "./logger-config.js";
-import { DateTime } from "@nivinjoseph/n-util";
+import { DateTime } from "luxon";
 
 /**
  * Abstract base class that provides common logging functionality.
@@ -110,6 +110,7 @@ export abstract class BaseLogger implements Logger
      */
     protected getErrorMessage(exp: Exception | Error | any): string
     {
+        // eslint-disable-next-line no-useless-assignment
         let logMessage = "";
         try 
         {
@@ -135,24 +136,24 @@ export abstract class BaseLogger implements Logger
      */
     protected getDateTime(): string
     {
-        let result: string | null = null;
+        let result: string;
 
         switch (this._logDateTimeZone)
         {
             case LogDateTimeZone.utc:
-                result = DateTime.now("utc").toStringISO();
+                result = DateTime.utc().toISO()!;
                 break;
             case LogDateTimeZone.local:
-                result = DateTime.now(DateTime.currentZone).toStringISO();
+                result = DateTime.now().toISO()!;
                 break;
             case LogDateTimeZone.est:
-                result = DateTime.now("America/New_York").toStringISO()!;
+                result = DateTime.now().setZone("America/New_York").toISO()!;
                 break;
             case LogDateTimeZone.pst:
-                result = DateTime.now("America/Los_Angeles").toStringISO()!;
+                result = DateTime.now().setZone("America/Los_Angeles").toISO()!;
                 break;
             default:
-                result = DateTime.now("utc").toStringISO();
+                result = DateTime.utc().toISO()!;
                 break;
         }
 

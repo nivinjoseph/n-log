@@ -1,5 +1,0 @@
-{
-    "env": "dev",
-    "slackBotToken": "foo",
-    "slackBotChannel": "bar"
-}

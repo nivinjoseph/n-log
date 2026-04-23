@@ -1,5 +1,5 @@
 import { given } from "@nivinjoseph/n-defensive";
-import { Duration } from "@nivinjoseph/n-util";
+import { Delay, Duration, Make, Mutex } from "@nivinjoseph/n-util";
 import SlackWebApi from "@slack/web-api";
 import { BaseLogger } from "./base-logger.js";
 /**
@@ -13,17 +13,28 @@ import { BaseLogger } from "./base-logger.js";
  * - Debug logs only posted in development environment
  */
 export class SlackLogger extends BaseLogger {
+    _includeInfo;
+    _includeWarn;
+    _includeError;
+    _logFilter;
+    _fallbackLogger;
+    _slackWebClient;
+    _channel;
+    _userName;
+    _userImage = ":robot_face:";
+    _userImageIsEmoji;
+    _flushMutex = new Mutex();
+    _messages = new Array();
+    _timer;
+    _isDisposed = false;
+    _disposePromise = null;
+    _warnedAfterDispose = false;
     /**
      * Creates a new instance of SlackLogger
      * @param config - Configuration for the Slack logger
      */
     constructor(config) {
-        var _a, _b;
         super(config);
-        this._userImage = ":robot_face:";
-        this._messages = new Array();
-        this._isDisposed = false;
-        this._disposePromise = null;
         // eslint-disable-next-line @typescript-eslint/unbound-method
         const { slackBotToken, slackBotChannel, slackUserName, slackUserImage, logFilter } = config;
         given(slackBotToken, "slackBotToken").ensureHasValue().ensureIsString();
@@ -40,18 +51,15 @@ export class SlackLogger extends BaseLogger {
             this._userImage = slackUserImage.trim();
         this._userImageIsEmoji = this._userImage.startsWith(":") && this._userImage.endsWith(":");
         const allFilters = ["Info", "Warn", "Error"];
-        const filter = (_a = config.filter) !== null && _a !== void 0 ? _a : allFilters;
+        const filter = config.filter ?? allFilters;
         given(filter, "filter").ensureIsArray().ensure(t => t.every(u => allFilters.contains(u)));
         this._includeInfo = filter.contains("Info");
         this._includeWarn = filter.contains("Warn");
         this._includeError = filter.contains("Error");
         given(logFilter, "logFilter").ensureIsFunction();
-        this._logFilter = logFilter !== null && logFilter !== void 0 ? logFilter : ((_) => true);
-        this._fallbackLogger = (_b = config.fallback) !== null && _b !== void 0 ? _b : null;
-        this._timer = setInterval(() => {
-            this._flushMessages()
-                .catch(e => { var _a, _b; return (_b = (_a = this._fallbackLogger) === null || _a === void 0 ? void 0 : _a.logError(e).catch(e => console.error(e))) !== null && _b !== void 0 ? _b : console.error(e); });
-        }, Duration.fromSeconds(30).toMilliSeconds());
+        this._logFilter = logFilter ?? ((_) => true);
+        this._fallbackLogger = config.fallback ?? null;
+        this._timer = this._createLogFlushTimeout();
     }
     /**
      * Logs a debug message to Slack.
@@ -60,6 +68,8 @@ export class SlackLogger extends BaseLogger {
      * @returns A promise that resolves when the log is queued
      */
     async logDebug(debug) {
+        if (this._isDisposedDrop())
+            return;
         if (this.env === "dev") {
             let log = {
                 source: this.source,
@@ -67,8 +77,7 @@ export class SlackLogger extends BaseLogger {
                 env: this.env,
                 level: "Debug",
                 message: debug,
-                dateTime: this.getDateTime(),
-                time: new Date().toISOString(),
+                ...this.getDateTime(),
                 color: "#F8F8F8"
             };
             if (this.logInjector)
@@ -82,6 +91,8 @@ export class SlackLogger extends BaseLogger {
      * @returns A promise that resolves when the log is queued
      */
     async logInfo(info) {
+        if (this._isDisposedDrop())
+            return;
         if (!this._includeInfo)
             return;
         let log = {
@@ -90,8 +101,7 @@ export class SlackLogger extends BaseLogger {
             env: this.env,
             level: "Info",
             message: info,
-            dateTime: this.getDateTime(),
-            time: new Date().toISOString(),
+            ...this.getDateTime(),
             color: "#259D2F"
         };
         if (!this._logFilter(log))
@@ -106,6 +116,8 @@ export class SlackLogger extends BaseLogger {
      * @returns A promise that resolves when the log is queued
      */
     async logWarning(warning) {
+        if (this._isDisposedDrop())
+            return;
         if (!this._includeWarn)
             return;
         let log = {
@@ -114,8 +126,7 @@ export class SlackLogger extends BaseLogger {
             env: this.env,
             level: "Warn",
             message: this.getErrorMessage(warning),
-            dateTime: this.getDateTime(),
-            time: new Date().toISOString(),
+            ...this.getDateTime(),
             color: "#F1AB2A"
         };
         if (!this._logFilter(log))
@@ -130,6 +141,8 @@ export class SlackLogger extends BaseLogger {
      * @returns A promise that resolves when the log is queued
      */
     async logError(error) {
+        if (this._isDisposedDrop())
+            return;
         if (!this._includeError)
             return;
         let log = {
@@ -138,8 +151,7 @@ export class SlackLogger extends BaseLogger {
             env: this.env,
             level: "Error",
             message: this.getErrorMessage(error),
-            dateTime: this.getDateTime(),
-            time: new Date().toISOString(),
+            ...this.getDateTime(),
             color: "#EF401D"
         };
         if (!this._logFilter(log))
@@ -155,21 +167,55 @@ export class SlackLogger extends BaseLogger {
     dispose() {
         if (!this._isDisposed) {
             this._isDisposed = true;
-            clearInterval(this._timer);
+            clearTimeout(this._timer);
             this._disposePromise = this._flushMessages();
         }
         return this._disposePromise;
     }
+    _createLogFlushTimeout() {
+        return setTimeout(() => {
+            this._flushMessages()
+                .catch(e => this._fallbackLogger?.logError(e).catch(e => console.error(e)) ?? console.error(e));
+        }, Duration.fromSeconds(15).toMilliSeconds());
+    }
     /**
-     * Flushes queued messages to Slack
+     * Returns true if the logger has been disposed and the caller should drop
+     * the message. Emits a one-shot warning to stderr the first time a log
+     * call is seen after dispose so the misuse is visible without spamming.
+     */
+    _isDisposedDrop() {
+        if (!this._isDisposed)
+            return false;
+        if (!this._warnedAfterDispose) {
+            this._warnedAfterDispose = true;
+            console.warn("SlackLogger: log call after dispose; message dropped. Further warnings suppressed.");
+        }
+        return true;
+    }
+    /**
+     * Flushes queued messages to Slack.
+     * Serialized via a mutex so concurrent invocations (timer + dispose,
+     * overlapping timer ticks) cannot interleave or post out of order.
+     * Drains the queue fully, posting in batches of 20 with a 1s gap
+     * between batches to stay under Slack's rate limit.
      * @returns A promise that resolves when messages are flushed
      */
     async _flushMessages() {
-        if (this._messages.isEmpty)
-            return;
-        const messagesToFlush = this._messages;
-        this._messages = new Array();
-        await this._postMessages(messagesToFlush);
+        await this._flushMutex.lock();
+        try {
+            while (!this._messages.isEmpty) {
+                const messagesToFlush = this._messages.take(20);
+                this._messages = this._messages.skip(20);
+                await this._postMessages(messagesToFlush);
+                if (!this._messages.isEmpty)
+                    await Delay.seconds(1);
+            }
+        }
+        finally {
+            this._flushMutex.release();
+            if (!this._isDisposed)
+                this._timer = this._createLogFlushTimeout();
+        }
     }
     /**
      * Posts messages to Slack
@@ -183,34 +229,37 @@ export class SlackLogger extends BaseLogger {
             //     icon_emoji: this._userImageIsEmoji ? this._userImage : undefined,
             //     icon_url: !this._userImageIsEmoji ? this._userImage : undefined,
             // };
-            await this._slackWebClient.chat.postMessage({
-                username: this._userName,
-                icon_emoji: this._userImageIsEmoji ? this._userImage : undefined,
-                icon_url: !this._userImageIsEmoji ? this._userImage : undefined,
-                channel: this._channel,
-                text: `${this.service} [${this.env}]`,
-                attachments: messages.map(log => {
-                    return {
-                        color: log.color,
-                        blocks: [
-                            {
-                                type: "section",
-                                text: {
-                                    type: "plain_text",
-                                    text: log.message
-                                }
-                            },
-                            {
-                                type: "context",
-                                elements: [{
+            await Make.retryWithExponentialBackoff(() => {
+                return this._slackWebClient.chat.postMessage({
+                    username: this._userName,
+                    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+                    icon_emoji: this._userImageIsEmoji ? this._userImage : undefined,
+                    icon_url: !this._userImageIsEmoji ? this._userImage : undefined,
+                    channel: this._channel,
+                    text: `${this.service} [${this.env}]`,
+                    attachments: messages.map(log => {
+                        return {
+                            color: log.color,
+                            blocks: [
+                                {
+                                    type: "section",
+                                    text: {
                                         type: "plain_text",
-                                        text: log.dateTime
-                                    }]
-                            }
-                        ]
-                    };
-                }),
-            });
+                                        text: log.message
+                                    }
+                                },
+                                {
+                                    type: "context",
+                                    elements: [{
+                                            type: "plain_text",
+                                            text: log.dateTime
+                                        }]
+                                }
+                            ]
+                        };
+                    }),
+                });
+            }, 10)();
         }
         catch (error) {
             if (this._fallbackLogger != null) {

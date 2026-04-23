@@ -44,10 +44,12 @@ export declare class SlackLogger extends BaseLogger implements Disposable {
     private readonly _userName;
     private readonly _userImage;
     private readonly _userImageIsEmoji;
+    private readonly _flushMutex;
     private _messages;
-    private readonly _timer;
+    private _timer;
     private _isDisposed;
     private _disposePromise;
+    private _warnedAfterDispose;
     /**
      * Creates a new instance of SlackLogger
      * @param config - Configuration for the Slack logger
@@ -83,8 +85,19 @@ export declare class SlackLogger extends BaseLogger implements Disposable {
      * @returns A promise that resolves when disposal is complete
      */
     dispose(): Promise<void>;
+    private _createLogFlushTimeout;
     /**
-     * Flushes queued messages to Slack
+     * Returns true if the logger has been disposed and the caller should drop
+     * the message. Emits a one-shot warning to stderr the first time a log
+     * call is seen after dispose so the misuse is visible without spamming.
+     */
+    private _isDisposedDrop;
+    /**
+     * Flushes queued messages to Slack.
+     * Serialized via a mutex so concurrent invocations (timer + dispose,
+     * overlapping timer ticks) cannot interleave or post out of order.
+     * Drains the queue fully, posting in batches of 20 with a 1s gap
+     * between batches to stay under Slack's rate limit.
      * @returns A promise that resolves when messages are flushed
      */
     private _flushMessages;

@@ -16,6 +16,10 @@ import { LogPrefix } from "./log-prefix.js";
  * - Debug logs only written in development environment
  */
 export class FileLogger extends BaseLogger {
+    _mutex = new Mutex();
+    _logDirPath;
+    _retentionDays;
+    _lastPurgedAt = 0;
     /**
      * Creates a new instance of FileLogger
      * @param config - Configuration for the file logger
@@ -26,8 +30,6 @@ export class FileLogger extends BaseLogger {
      */
     constructor(config) {
         super(config);
-        this._mutex = new Mutex();
-        this._lastPurgedAt = 0;
         const { logDirPath, retentionDays } = config;
         given(logDirPath, "logDirPath").ensureHasValue().ensureIsString()
             .ensure(t => Path.isAbsolute(t), "must be absolute");
@@ -80,7 +82,7 @@ export class FileLogger extends BaseLogger {
     async _writeToLog(status, message) {
         given(status, "status").ensureHasValue().ensureIsEnum(LogPrefix);
         given(message, "message").ensureHasValue().ensureIsString();
-        const dateTime = this.getDateTime();
+        const dateTimeValue = this.getDateTime();
         if (this.useJsonFormat) {
             let level = "";
             switch (status) {
@@ -103,8 +105,7 @@ export class FileLogger extends BaseLogger {
                 env: this.env,
                 level: level,
                 message,
-                dateTime,
-                time: new Date().toISOString()
+                ...dateTimeValue
             };
             this.injectTrace(log, level === "Error");
             if (this.logInjector)
@@ -112,9 +113,9 @@ export class FileLogger extends BaseLogger {
             message = JSON.stringify(log);
         }
         else {
-            message = `${dateTime} ${status} ${message}`;
+            message = `${dateTimeValue.dateTime} ${status} ${message}`;
         }
-        const logFileName = `${dateTime.substr(0, 13)}.log`;
+        const logFileName = `${dateTimeValue.dateTime.substr(0, 13)}.log`;
         const logFilePath = Path.join(this._logDirPath, logFileName);
         await this._mutex.lock();
         try {

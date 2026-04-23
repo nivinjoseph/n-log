@@ -75,7 +75,10 @@ export declare abstract class BaseLogger implements Logger {
      * Gets the current date and time in the configured timezone
      * @returns ISO formatted date-time string
      */
-    protected getDateTime(): string;
+    protected getDateTime(): {
+        dateTime: string;
+        time: string;
+    };
     /**
      * Injects trace information into a log record
      * @param log - The log record to inject trace information into
@@ -92,7 +95,7 @@ export declare abstract class BaseLogger implements Logger {
     /**
      * Converts a numerical string to a buffer using the specified radix
      * @param str - The string to convert
-     * @param raddix - The radix to use for conversion
+     * @param radix - The radix to use for conversion
      * @returns The converted buffer
      */
     private _fromString;

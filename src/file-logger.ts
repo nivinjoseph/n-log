@@ -106,7 +106,7 @@ export class FileLogger extends BaseLogger
         given(status, "status").ensureHasValue().ensureIsEnum(LogPrefix);
         given(message, "message").ensureHasValue().ensureIsString();
 
-        const dateTime = this.getDateTime();
+        const dateTimeValue = this.getDateTime();
 
         if (this.useJsonFormat)
         {
@@ -134,8 +134,7 @@ export class FileLogger extends BaseLogger
                 env: this.env,
                 level: level,
                 message,
-                dateTime,
-                time: new Date().toISOString()
+                ...dateTimeValue
             };
 
             this.injectTrace(log, level === "Error");
@@ -147,10 +146,10 @@ export class FileLogger extends BaseLogger
         }
         else
         {
-            message = `${dateTime} ${status} ${message}`;
+            message = `${dateTimeValue.dateTime} ${status} ${message}`;
         }
 
-        const logFileName = `${dateTime.substr(0, 13)}.log`;
+        const logFileName = `${dateTimeValue.dateTime.substr(0, 13)}.log`;
         const logFilePath = Path.join(this._logDirPath, logFileName);
 
         await this._mutex.lock();

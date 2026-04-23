@@ -6,6 +6,7 @@ import { LogRecord } from "./log-record.js";
 import { Logger } from "./logger.js";
 import { LoggerConfig } from "./logger-config.js";
 import { DateTime } from "luxon";
+import { ensureExhaustiveCheck } from "@nivinjoseph/n-defensive";
 
 /**
  * Abstract base class that provides common logging functionality.
@@ -134,30 +135,31 @@ export abstract class BaseLogger implements Logger
      * Gets the current date and time in the configured timezone
      * @returns ISO formatted date-time string
      */
-    protected getDateTime(): string
+    protected getDateTime(): { dateTime: string; time: string; }
     {
-        let result: string;
+        const value = DateTime.now();
+        const time = value.toUTC().toISO();
 
+        let dateTime: string;
         switch (this._logDateTimeZone)
         {
             case LogDateTimeZone.utc:
-                result = DateTime.utc().toISO()!;
+                dateTime = time;
                 break;
             case LogDateTimeZone.local:
-                result = DateTime.now().toISO()!;
+                dateTime = value.toISO()!;
                 break;
             case LogDateTimeZone.est:
-                result = DateTime.now().setZone("America/New_York").toISO()!;
+                dateTime = value.setZone("America/New_York").toISO()!;
                 break;
             case LogDateTimeZone.pst:
-                result = DateTime.now().setZone("America/Los_Angeles").toISO()!;
+                dateTime = value.setZone("America/Los_Angeles").toISO()!;
                 break;
             default:
-                result = DateTime.utc().toISO()!;
-                break;
+                ensureExhaustiveCheck(this._logDateTimeZone);
         }
 
-        return result;
+        return { dateTime, time };
     }
 
     /**
@@ -228,10 +230,10 @@ export abstract class BaseLogger implements Logger
     /**
      * Converts a numerical string to a buffer using the specified radix
      * @param str - The string to convert
-     * @param raddix - The radix to use for conversion
+     * @param radix - The radix to use for conversion
      * @returns The converted buffer
      */
-    private _fromString(str: string, raddix: number): Uint8Array
+    private _fromString(str: string, radix: number): Uint8Array
     {
         const buffer = new Uint8Array(8);
         const len = str.length;
@@ -248,13 +250,13 @@ export abstract class BaseLogger implements Logger
 
         while (pos < len)
         {
-            const chr = parseInt(str[pos++], raddix);
+            const chr = parseInt(str[pos++], radix);
 
             if (!(chr >= 0))
                 break; // NaN
 
-            low = low * raddix + chr;
-            high = high * raddix + Math.floor(low / this._UINT_MAX);
+            low = low * radix + chr;
+            high = high * radix + Math.floor(low / this._UINT_MAX);
             low %= this._UINT_MAX;
         }
 

@@ -1,6 +1,6 @@
 import { given } from "@nivinjoseph/n-defensive";
 import { Exception } from "@nivinjoseph/n-exception";
-import { Disposable, Duration } from "@nivinjoseph/n-util";
+import { Delay, Disposable, Duration, Make, Mutex } from "@nivinjoseph/n-util";
 import SlackWebApi from "@slack/web-api";
 import { BaseLogger } from "./base-logger.js";
 import { LogRecord } from "./log-record.js";
@@ -49,10 +49,12 @@ export class SlackLogger extends BaseLogger implements Disposable
     private readonly _userName: string;
     private readonly _userImage: string = ":robot_face:";
     private readonly _userImageIsEmoji: boolean;
+    private readonly _flushMutex = new Mutex();
     private _messages = new Array<SlackMessage>();
-    private readonly _timer: NodeJS.Timeout;
+    private _timer: NodeJS.Timeout;
     private _isDisposed = false;
     private _disposePromise: Promise<void> | null = null;
+    private _warnedAfterDispose = false;
 
     /**
      * Creates a new instance of SlackLogger
@@ -96,11 +98,7 @@ export class SlackLogger extends BaseLogger implements Disposable
 
         this._fallbackLogger = config.fallback ?? null;
 
-        this._timer = setInterval(() =>
-        {
-            this._flushMessages()
-                .catch(e => this._fallbackLogger?.logError(e).catch(e => console.error(e)) ?? console.error(e));
-        }, Duration.fromSeconds(30).toMilliSeconds());
+        this._timer = this._createLogFlushTimeout();
     }
 
     /**
@@ -111,6 +109,9 @@ export class SlackLogger extends BaseLogger implements Disposable
      */
     public async logDebug(debug: string): Promise<void>
     {
+        if (this._isDisposedDrop())
+            return;
+
         if (this.env === "dev")
         {
             let log: SlackMessage = {
@@ -119,8 +120,7 @@ export class SlackLogger extends BaseLogger implements Disposable
                 env: this.env,
                 level: "Debug",
                 message: debug,
-                dateTime: this.getDateTime(),
-                time: new Date().toISOString(),
+                ...this.getDateTime(),
                 color: "#F8F8F8"
             };
 
@@ -138,6 +138,9 @@ export class SlackLogger extends BaseLogger implements Disposable
      */
     public async logInfo(info: string): Promise<void>
     {
+        if (this._isDisposedDrop())
+            return;
+
         if (!this._includeInfo)
             return;
 
@@ -147,8 +150,7 @@ export class SlackLogger extends BaseLogger implements Disposable
             env: this.env,
             level: "Info",
             message: info,
-            dateTime: this.getDateTime(),
-            time: new Date().toISOString(),
+            ...this.getDateTime(),
             color: "#259D2F"
         };
 
@@ -168,6 +170,9 @@ export class SlackLogger extends BaseLogger implements Disposable
      */
     public async logWarning(warning: string | Exception): Promise<void>
     {
+        if (this._isDisposedDrop())
+            return;
+
         if (!this._includeWarn)
             return;
 
@@ -177,8 +182,7 @@ export class SlackLogger extends BaseLogger implements Disposable
             env: this.env,
             level: "Warn",
             message: this.getErrorMessage(warning),
-            dateTime: this.getDateTime(),
-            time: new Date().toISOString(),
+            ...this.getDateTime(),
             color: "#F1AB2A"
         };
 
@@ -198,6 +202,9 @@ export class SlackLogger extends BaseLogger implements Disposable
      */
     public async logError(error: string | Exception): Promise<void>
     {
+        if (this._isDisposedDrop())
+            return;
+
         if (!this._includeError)
             return;
 
@@ -207,8 +214,7 @@ export class SlackLogger extends BaseLogger implements Disposable
             env: this.env,
             level: "Error",
             message: this.getErrorMessage(error),
-            dateTime: this.getDateTime(),
-            time: new Date().toISOString(),
+            ...this.getDateTime(),
             color: "#EF401D"
         };
 
@@ -230,26 +236,71 @@ export class SlackLogger extends BaseLogger implements Disposable
         if (!this._isDisposed)
         {
             this._isDisposed = true;
-            clearInterval(this._timer);
+            clearTimeout(this._timer);
             this._disposePromise = this._flushMessages();
         }
 
         return this._disposePromise!;
     }
+    
+    private _createLogFlushTimeout(): NodeJS.Timeout
+    {
+        return setTimeout(() =>
+        {
+            this._flushMessages()
+                .catch(e => this._fallbackLogger?.logError(e).catch(e => console.error(e)) ?? console.error(e));
+        }, Duration.fromSeconds(15).toMilliSeconds());
+    }
 
     /**
-     * Flushes queued messages to Slack
+     * Returns true if the logger has been disposed and the caller should drop
+     * the message. Emits a one-shot warning to stderr the first time a log
+     * call is seen after dispose so the misuse is visible without spamming.
+     */
+    private _isDisposedDrop(): boolean
+    {
+        if (!this._isDisposed)
+            return false;
+
+        if (!this._warnedAfterDispose)
+        {
+            this._warnedAfterDispose = true;
+            console.warn("SlackLogger: log call after dispose; message dropped. Further warnings suppressed.");
+        }
+
+        return true;
+    }
+
+    /**
+     * Flushes queued messages to Slack.
+     * Serialized via a mutex so concurrent invocations (timer + dispose,
+     * overlapping timer ticks) cannot interleave or post out of order.
+     * Drains the queue fully, posting in batches of 20 with a 1s gap
+     * between batches to stay under Slack's rate limit.
      * @returns A promise that resolves when messages are flushed
      */
     private async _flushMessages(): Promise<void>
     {
-        if (this._messages.isEmpty)
-            return;
+        await this._flushMutex.lock();
+        try
+        {
+            while (!this._messages.isEmpty)
+            {
+                const messagesToFlush = this._messages.take(20);
+                this._messages = this._messages.skip(20);
 
-        const messagesToFlush = this._messages;
-        this._messages = new Array<SlackMessage>();
+                await this._postMessages(messagesToFlush);
 
-        await this._postMessages(messagesToFlush);
+                if (!this._messages.isEmpty)
+                    await Delay.seconds(1);
+            }
+        }
+        finally
+        {
+            this._flushMutex.release();
+            if (!this._isDisposed)
+                this._timer = this._createLogFlushTimeout();
+        }
     }
 
     /**
@@ -268,36 +319,39 @@ export class SlackLogger extends BaseLogger implements Disposable
 
             // };
 
-            await this._slackWebClient.chat.postMessage({
-                username: this._userName,
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-                icon_emoji: this._userImageIsEmoji ? this._userImage : undefined as any,
-                icon_url: !this._userImageIsEmoji ? this._userImage : undefined,
-                channel: this._channel,
-                text: `${this.service} [${this.env}]`,
-                attachments: messages.map(log =>
-                {
-                    return {
-                        color: log.color,
-                        blocks: [
-                            {
-                                type: "section",
-                                text: {
-                                    type: "plain_text",
-                                    text: log.message
+            await Make.retryWithExponentialBackoff(() =>
+            {
+                return this._slackWebClient.chat.postMessage({
+                    username: this._userName,
+                    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+                    icon_emoji: this._userImageIsEmoji ? this._userImage : undefined as any,
+                    icon_url: !this._userImageIsEmoji ? this._userImage : undefined,
+                    channel: this._channel,
+                    text: `${this.service} [${this.env}]`,
+                    attachments: messages.map(log =>
+                    {
+                        return {
+                            color: log.color,
+                            blocks: [
+                                {
+                                    type: "section",
+                                    text: {
+                                        type: "plain_text",
+                                        text: log.message
+                                    }
+                                },
+                                {
+                                    type: "context",
+                                    elements: [{
+                                        type: "plain_text",
+                                        text: log.dateTime
+                                    }]
                                 }
-                            },
-                            {
-                                type: "context",
-                                elements: [{
-                                    type: "plain_text",
-                                    text: log.dateTime
-                                }]
-                            }
-                        ]
-                    };
-                }),
-            });
+                            ]
+                        };
+                    }),
+                });
+            }, 10)();
         }
         catch (error)
         {

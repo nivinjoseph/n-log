@@ -35,8 +35,7 @@ export class ConsoleLogger extends BaseLogger
                     env: this.env,
                     level: "Debug",
                     message: debug,
-                    dateTime: this.getDateTime(),
-                    time: new Date().toISOString()
+                    ...this.getDateTime()
                 };
 
                 this.injectTrace(log);
@@ -70,8 +69,7 @@ export class ConsoleLogger extends BaseLogger
                 env: this.env,
                 level: "Info",
                 message: info,
-                dateTime: this.getDateTime(),
-                time: new Date().toISOString()
+                ...this.getDateTime()
             };
 
             this.injectTrace(log);
@@ -104,8 +102,7 @@ export class ConsoleLogger extends BaseLogger
                 env: this.env,
                 level: "Warn",
                 message: this.getErrorMessage(warning),
-                dateTime: this.getDateTime(),
-                time: new Date().toISOString()
+                ...this.getDateTime()
             };
 
             this.injectTrace(log);
@@ -138,8 +135,7 @@ export class ConsoleLogger extends BaseLogger
                 env: this.env,
                 level: "Error",
                 message: this.getErrorMessage(error),
-                dateTime: this.getDateTime(),
-                time: new Date().toISOString()
+                ...this.getDateTime()
             };
 
             this.injectTrace(log, true);

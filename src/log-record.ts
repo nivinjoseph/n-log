@@ -21,6 +21,6 @@ export interface LogRecord
     /** Formatted date-time string in configured timezone */
     dateTime: string;
 
-    /** ISO formatted date-time string */
+    /** ISO formatted UTC date-time string */
     time: string;
 }

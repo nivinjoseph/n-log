@@ -35,7 +35,7 @@ export class ConsoleLogger extends BaseLogger {
                 this._stream.write(JSON.stringify(log) + "\n");
             }
             else {
-                this._stream.write(`${this.getDateTime()} ${LogPrefix.debug} ${debug}\n`);
+                this._stream.write(`${this.getDateTime().dateTime} ${LogPrefix.debug} ${debug}\n`);
             }
         }
         return Promise.resolve();
@@ -61,7 +61,7 @@ export class ConsoleLogger extends BaseLogger {
             this._stream.write(JSON.stringify(log) + "\n");
         }
         else {
-            this._stream.write(chalk.blue(`${this.getDateTime()} ${chalk.bold(LogPrefix.info)} ${info}\n`));
+            this._stream.write(chalk.blue(`${this.getDateTime().dateTime} ${chalk.bold(LogPrefix.info)} ${info}\n`));
         }
         return Promise.resolve();
     }
@@ -86,7 +86,7 @@ export class ConsoleLogger extends BaseLogger {
             this._stream.write(JSON.stringify(log) + "\n");
         }
         else {
-            this._stream.write(chalk.yellow(`${this.getDateTime()} ${chalk.bold(LogPrefix.warning)} ${this.getErrorMessage(warning)}\n`));
+            this._stream.write(chalk.yellow(`${this.getDateTime().dateTime} ${chalk.bold(LogPrefix.warning)} ${this.getErrorMessage(warning)}\n`));
         }
         return Promise.resolve();
     }
@@ -111,7 +111,7 @@ export class ConsoleLogger extends BaseLogger {
             this._stream.write(JSON.stringify(log) + "\n");
         }
         else {
-            this._stream.write(chalk.red(`${this.getDateTime()} ${chalk.bold(LogPrefix.error)} ${this.getErrorMessage(error)}\n`));
+            this._stream.write(chalk.red(`${this.getDateTime().dateTime} ${chalk.bold(LogPrefix.error)} ${this.getErrorMessage(error)}\n`));
         }
         return Promise.resolve();
     }
